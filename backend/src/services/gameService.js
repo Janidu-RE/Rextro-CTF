@@ -10,37 +10,30 @@ export const autoEndRound = async () => {
   try {
     console.log('Auto-ending round due to time expiration');
     
-    // 1. Find the active round first so we can get the groupId
     const activeRound = await Round.findOne({ active: true });
     
     if (activeRound) {
         const group = await Group.findById(activeRound.groupId);
         if (group) {
-            // CRITICAL: Update players to mark them as played
+            // 1. Mark players as finished (Keep groupId for leaderboard)
             await Player.updateMany(
                 { _id: { $in: group.players } },
                 { 
                     status: 'finished', 
-                    groupId: null,
                     alreadyPlayed: true 
                 }
             );
-            // Delete the group
-            await Group.deleteOne({ _id: activeRound.groupId });
+            
+            // 2. Mark Group as completed
+            await Group.updateOne({ _id: activeRound.groupId }, { roundCompleted: true, currentRound: false });
         }
 
-        // Deactivate the round
+        // 3. Archive Round
         activeRound.active = false;
         activeRound.endTime = new Date();
         activeRound.remainingTime = 0;
         await activeRound.save();
     }
-
-    // Cleanup any lingering currentRound flags
-    await Group.updateMany({ currentRound: true }, { 
-      currentRound: false,
-      roundCompleted: true
-    });
 
     stopGlobalCountdown();
     console.log('Round auto-ended successfully');
@@ -65,8 +58,6 @@ export const startGlobalCountdown = () => {
         activeRound.remainingTime -= 1;
         await activeRound.save();
         
-        // Optional: emit socket event here if you use Socket.io later
-        
         if (activeRound.remainingTime === 0) {
           await autoEndRound();
         }
@@ -88,9 +79,10 @@ export const stopGlobalCountdown = () => {
 
 export const autoAssignGroups = async () => {
   try {
-    // Updated query: Only find players not in a group AND who haven't played yet
+    // Only pick players who are waiting AND have NOT played yet
     const ungroupedPlayers = await Player.find({ 
       groupId: { $exists: false },
+      status: 'waiting',
       alreadyPlayed: { $ne: true } 
     });
     

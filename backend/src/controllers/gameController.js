@@ -66,30 +66,24 @@ export const submitFlag = async (req, res) => {
   }
 };
 
-// 3. Get Leaderboard
+// 3. Get Leaderboard (FIXED PERSISTENCE)
 export const getLeaderboard = async (req, res) => {
   try {
-    const activeRound = await Round.findOne({ active: true });
-    let query = {};
+    // A. Check for ACTIVE Round
+    let targetRound = await Round.findOne({ active: true });
 
-    if (activeRound) {
-      query = { groupId: activeRound.groupId };
-    } else {
-      const lastPlayed = await Player.findOne({ status: 'finished' })
-        .sort({ updatedAt: -1 });
-
-      if (lastPlayed) {
-        const batchTimeWindow = new Date(lastPlayed.updatedAt.getTime() - 5000);
-        query = { 
-          status: 'finished', 
-          updatedAt: { $gte: batchTimeWindow } 
-        };
-      } else {
-        return res.json([]);
-      }
+    // B. If no active round, find the LAST FINISHED Round
+    if (!targetRound) {
+      targetRound = await Round.findOne({ active: false }).sort({ endTime: -1 });
     }
 
-    const leaderboard = await Player.find(query)
+    // C. If still no round (system brand new), return empty
+    if (!targetRound) {
+      return res.json([]);
+    }
+
+    // Fetch players belonging to this specific round's group
+    const leaderboard = await Player.find({ groupId: targetRound.groupId })
       .select('name score solvedFlags')
       .sort({ score: -1, lastSubmissionTime: 1 });
 
@@ -100,7 +94,7 @@ export const getLeaderboard = async (req, res) => {
   }
 };
 
-// 4. Get Game Status (ADD THIS FUNCTION)
+// 4. Get Game Status
 export const getGameStatus = async (req, res) => {
   try {
     const activeRound = await Round.findOne({ active: true });

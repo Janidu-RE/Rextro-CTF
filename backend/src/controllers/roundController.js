@@ -18,7 +18,7 @@ export const startRound = async (req, res) => {
   try {
     const { groupId } = req.body;
     
-    // Deactivate any previous active rounds (keep history, don't delete)
+    // Archive previous active rounds instead of deleting
     await Round.updateMany({ active: true }, { active: false, endTime: new Date() });
 
     const round = new Round({
@@ -52,23 +52,22 @@ export const endRound = async (req, res) => {
     const groupId = activeRound.groupId;
     const group = await Group.findById(groupId);
 
-    // 1. Update Players: Mark as played, but KEEP groupId so we can query them for leaderboard
     if (group) {
+        // 1. Mark Players as Finished
+        // IMPORTANT: We do NOT set groupId to null. We keep the link so the Leaderboard works.
         await Player.updateMany(
             { _id: { $in: group.players } },
             { 
               status: 'finished', 
               alreadyPlayed: true 
-              // Note: We do NOT set groupId to null anymore. 
-              // We need it to link them to this round for the leaderboard.
             }
         );
         
-        // 2. Mark Group as completed (don't delete)
+        // 2. Mark Group as Completed (Do NOT Delete)
         await Group.updateOne({ _id: groupId }, { roundCompleted: true, currentRound: false });
     }
 
-    // 3. Mark Round as inactive (don't delete)
+    // 3. Mark Round as Inactive (Do NOT Delete)
     activeRound.active = false;
     activeRound.endTime = new Date();
     activeRound.remainingTime = 0;
@@ -76,7 +75,7 @@ export const endRound = async (req, res) => {
 
     stopGlobalCountdown();
 
-    res.json({ message: 'Round ended. History preserved.' });
+    res.json({ message: 'Round ended. History preserved for leaderboard.' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
