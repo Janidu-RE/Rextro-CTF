@@ -147,4 +147,5 @@ export const gameAPI = {
       body: JSON.stringify({ playerId, flagCode }),
     }),
   getLeaderboard: () => apiRequest('/game/leaderboard'),
+  getStatus: () => apiRequest('/game/status'), 
 };

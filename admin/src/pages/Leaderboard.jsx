@@ -54,54 +54,54 @@ const Leaderboard = ({ minimal = false }) => {
       )}
 
       <div className="space-y-3 max-w-4xl mx-auto">
-        {data.map((player, index) => (
-          <div 
-            key={player._id}
-            className={`
-              relative flex items-center justify-between p-4 rounded-xl border backdrop-blur-sm transition-all duration-300
-              hover:scale-[1.02] hover:bg-gray-800/80
-              ${getRankStyle(index)}
-            `}
-          >
-            {/* Rank & Name */}
-            <div className="flex items-center gap-4 md:gap-6">
-              <div className={`
-                flex items-center justify-center w-12 h-12 rounded-full bg-black/40 border border-white/10 shrink-0
-                ${index < 3 ? 'shadow-[0_0_15px_rgba(0,0,0,0.5)]' : ''}
-              `}>
-                {getIcon(index)}
-              </div>
-              
-              <div className="flex flex-col min-w-0">
-                <span className={`font-bold text-lg md:text-xl truncate ${index === 0 ? 'text-white' : 'text-gray-200'}`}>
-                  {player.name}
-                </span>
-                <span className="text-xs text-gray-500 font-mono flex items-center gap-1">
-                  <Target size={12} />
-                  {player.solvedFlags?.length || 0} Flags Captured
-                </span>
-              </div>
-            </div>
-
-            {/* Score */}
-            <div className="text-right shrink-0">
-              <div className="font-mono font-bold text-2xl md:text-3xl text-white tracking-tight">
-                {player.score.toFixed(2)}
-              </div>
-              <div className="text-[10px] uppercase tracking-widest text-gray-500">PTS</div>
-            </div>
-
-            {/* Glowing effect for top 3 */}
-            {index < 3 && (
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-white/5 to-transparent pointer-events-none"></div>
-            )}
-          </div>
-        ))}
-
-        {data.length === 0 && (
+        {data.length === 0 ? (
           <div className="text-center py-12 text-gray-500 border border-dashed border-gray-700 rounded-xl">
-            No active players found in the system.
+            No active or past round data found.
           </div>
+        ) : (
+          data.map((player, index) => (
+            <div 
+              key={player._id}
+              className={`
+                relative flex items-center justify-between p-4 rounded-xl border backdrop-blur-sm transition-all duration-300
+                hover:scale-[1.02] hover:bg-gray-800/80
+                ${getRankStyle(index)}
+              `}
+            >
+              {/* Rank & Name */}
+              <div className="flex items-center gap-4 md:gap-6">
+                <div className={`
+                  flex items-center justify-center w-12 h-12 rounded-full bg-black/40 border border-white/10 shrink-0
+                  ${index < 3 ? 'shadow-[0_0_15px_rgba(0,0,0,0.5)]' : ''}
+                `}>
+                  {getIcon(index)}
+                </div>
+                
+                <div className="flex flex-col min-w-0">
+                  <span className={`font-bold text-lg md:text-xl truncate ${index === 0 ? 'text-white' : 'text-gray-200'}`}>
+                    {player.name}
+                  </span>
+                  <span className="text-xs text-gray-500 font-mono flex items-center gap-1">
+                    <Target size={12} />
+                    {player.solvedFlags?.length || 0} Flags Captured
+                  </span>
+                </div>
+              </div>
+
+              {/* Score */}
+              <div className="text-right shrink-0">
+                <div className="font-mono font-bold text-2xl md:text-3xl text-white tracking-tight">
+                  {player.score.toFixed(2)}
+                </div>
+                <div className="text-[10px] uppercase tracking-widest text-gray-500">PTS</div>
+              </div>
+
+              {/* Glowing effect for top 3 */}
+              {index < 3 && (
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-white/5 to-transparent pointer-events-none"></div>
+              )}
+            </div>
+          ))
         )}
       </div>
     </div>

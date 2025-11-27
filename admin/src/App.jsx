@@ -10,6 +10,7 @@ import RoundManager from './pages/RoundManager';
 import Countdown from './pages/Countdown';
 import Leaderboard from './pages/Leaderboard';
 import PlayerPortal from './pages/PlayerPortal';
+import Challenges from './pages/Challenges';
 
 function App() {
   return (
@@ -20,6 +21,8 @@ function App() {
             <Routes>
               {/* Public Routes */}
               <Route path="/login" element={<Login />} />
+
+              <Route path="/challenges" element={<Challenges />} />
               
               {/* Protected Routes */}
               <Route 

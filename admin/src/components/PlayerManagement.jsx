@@ -19,7 +19,7 @@ const PlayerManagement = () => {
   const handleTimeSync = async (changedGroupId, newTime) => {
     try {
       const response = await fetch(
-        `http://localhost:5001/api/groups/update-times/${changedGroupId}`,
+        `http://10.38.29.187:5001/api/groups/update-times/${changedGroupId}`,
         {
           method: 'PUT',
           headers: {
