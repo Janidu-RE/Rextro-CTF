@@ -8,35 +8,40 @@ let globalCountdownInterval = null;
 
 export const autoEndRound = async () => {
   try {
-    console.log('Auto-ending round due to time expiration');
     
+    // 1. Find the active round first so we can get the groupId
     const activeRound = await Round.findOne({ active: true });
     
     if (activeRound) {
         const group = await Group.findById(activeRound.groupId);
         if (group) {
-            // 1. Mark players as finished (Keep groupId for leaderboard)
+            // CRITICAL: Update players to mark them as played
             await Player.updateMany(
                 { _id: { $in: group.players } },
                 { 
                     status: 'finished', 
+                    groupId: null,
                     alreadyPlayed: true 
                 }
             );
-            
-            // 2. Mark Group as completed
-            await Group.updateOne({ _id: activeRound.groupId }, { roundCompleted: true, currentRound: false });
+            // Delete the group
+            await Group.deleteOne({ _id: activeRound.groupId });
         }
 
-        // 3. Archive Round
+        // Deactivate the round
         activeRound.active = false;
         activeRound.endTime = new Date();
         activeRound.remainingTime = 0;
         await activeRound.save();
     }
 
+    // Cleanup any lingering currentRound flags
+    await Group.updateMany({ currentRound: true }, { 
+      currentRound: false,
+      roundCompleted: true
+    });
+
     stopGlobalCountdown();
-    console.log('Round auto-ended successfully');
   } catch (error) {
     console.error('Auto-end round error:', error);
   }
@@ -75,42 +80,76 @@ export const stopGlobalCountdown = () => {
   }
 };
 
-// --- Auto Assign Logic ---
+// --- Auto Assign Logic (UPDATED) ---
 
 export const autoAssignGroups = async () => {
   try {
-    // Only pick players who are waiting AND have NOT played yet
-    const ungroupedPlayers = await Player.find({ 
-      groupId: { $exists: false },
-      status: 'waiting',
-      alreadyPlayed: { $ne: true } 
-    });
+
+    // 1. Fetch ALL eligible waiting players
+    // REMOVED strict status check. Now relying on:
+    // - Not in a group (groupId is null or missing)
+    // - Has not played yet (alreadyPlayed is false or missing)
+    const query = {
+        $or: [{ groupId: { $exists: false } }, { groupId: null }],
+        alreadyPlayed: { $ne: true }
+    };
+
+    const ungroupedPlayers = await Player.find(query).sort({ createdAt: 1 });
     
-    if (ungroupedPlayers.length >= 6) {
-      const lastGroup = await Group.findOne().sort({ startTime: -1 });
-      let nextStartTime = new Date();
-      
-      if (lastGroup) {
-        nextStartTime = new Date(lastGroup.startTime);
-        nextStartTime.setMinutes(nextStartTime.getMinutes() + 30);
-      } else {
-        nextStartTime.setMinutes(nextStartTime.getMinutes() + 30);
-      }
-
-      const playersToAssign = ungroupedPlayers.slice(0, 6);
-      const newGroup = new Group({
-        name: `Team ${Date.now()}`,
-        players: playersToAssign.map(p => p._id),
-        startTime: nextStartTime
-      });
-
-      await newGroup.save();
-
-      await Player.updateMany(
-        { _id: { $in: playersToAssign.map(p => p._id) } },
-        { groupId: newGroup._id }
-      );
+    // Debug Logging
+    if (ungroupedPlayers.length === 0) {
+        const total = await Player.countDocuments();
+    } else {
+        console.log(`Found ${ungroupedPlayers.length} eligible waiting players.`);
     }
+
+    // 2. Loop to create as many groups of 6 as possible
+    const GROUP_SIZE = 6; 
+    let processedCount = 0;
+
+    // While we have at least GROUP_SIZE players remaining in the list...
+    while ((ungroupedPlayers.length - processedCount) >= GROUP_SIZE) {
+        
+        // Take the next batch of players
+        const playersToAssign = ungroupedPlayers.slice(processedCount, processedCount + GROUP_SIZE);
+        
+        // Determine Start Time based on the absolute latest group in DB
+        const lastGroup = await Group.findOne().sort({ startTime: -1 });
+        let nextStartTime = new Date();
+        
+        if (lastGroup) {
+            nextStartTime = new Date(lastGroup.startTime);
+            nextStartTime.setMinutes(nextStartTime.getMinutes() + 30);
+        } else {
+            // If no groups exist, start 30 mins from now
+            nextStartTime.setMinutes(nextStartTime.getMinutes() + 30);
+        }
+
+        // Create Group
+        const newGroup = new Group({
+            name: `Team ${Date.now()}`, // Unique name based on timestamp
+            players: playersToAssign.map(p => p._id),
+            startTime: nextStartTime
+        });
+
+        await newGroup.save();
+
+        // Update these players to belong to the new group
+        await Player.updateMany(
+            { _id: { $in: playersToAssign.map(p => p._id) } },
+            { groupId: newGroup._id, status: 'playing' } // Also update status for consistency
+        );
+
+        console.log(`[Auto-Group] Created '${newGroup.name}' with ${GROUP_SIZE} players.`);
+        
+        // Increment counter to process the next batch
+        processedCount += GROUP_SIZE;
+    }
+
+    if (processedCount === 0 && ungroupedPlayers.length > 0) {
+        console.log(`Waiting for more players... Has ${ungroupedPlayers.length}, Need ${GROUP_SIZE}`);
+    }
+
   } catch (error) {
     console.error('Auto-assign groups error:', error);
   }
