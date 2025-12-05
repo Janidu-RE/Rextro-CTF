@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ExternalLink, Terminal, Shield, Cpu, Lock, FileCode } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Terminal, Shield, Cpu, Lock, FileCode, Eye } from 'lucide-react';
 
 const Challenges = () => {
   const navigate = useNavigate();
@@ -19,12 +19,12 @@ const Challenges = () => {
   const challenges = [
     {
       id: 1,
-      title: "Binary Exploitation",
-      description: "Analyze the compiled binary to find the buffer overflow vulnerability and inject your shellcode.",
-      icon: <Terminal size={48} className="text-blue-400" />,
-      color: "from-blue-900/40 to-blue-600/10",
-      borderColor: "border-blue-500/50",
-      link: "#binary-challenge"
+      title: "Society: The Breadcrumb",
+      description: "Elliot left this image on a compromised E Corp server before wiping the logs. It looks like a standard surveillance photo, but he hid a key inside it. Reveal the key and solve the mystery.",
+      icon: <Eye size={48} className="text-blue-400" />,
+      color: "from-red-900/60 to-black/80", 
+      borderColor: "border-red-600/50",
+      link: "https://drive.google.com/file/d/1_YUI8QG9UhdF6EVF26YG3x7MzsvIH0cc/view?usp=drive_link" 
     },
     {
       id: 2,
