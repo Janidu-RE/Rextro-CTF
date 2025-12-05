@@ -16,20 +16,22 @@ export const getCurrentRound = async (req, res) => {
 
 export const startRound = async (req, res) => {
   try {
-    const { groupId } = req.body;
+    const { groupId, flagSet } = req.body; // Admin sends flagSet now
     
-    // Archive previous active rounds instead of deleting
+    // Archive old rounds
     await Round.updateMany({ active: true }, { active: false, endTime: new Date() });
 
     const round = new Round({
       groupId,
       startTime: new Date(),
       active: true,
-      remainingTime: 1200
+      remainingTime: 1200,
+      flagSet: flagSet || 1 // Default to set 1 if missing
     });
 
     await round.save();
     
+    // Manage Group state
     await Group.updateMany({}, { currentRound: false });
     await Group.findByIdAndUpdate(groupId, { currentRound: true });
 
@@ -38,9 +40,11 @@ export const startRound = async (req, res) => {
     const currentRound = await Round.findOne({ active: true })
       .populate('groupId')
       .populate({ path: 'groupId', populate: { path: 'players' } });
+      
     res.json(currentRound);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.error(error);
+    res.status(500).json({ message: 'Server error starting round' });
   }
 };
 
@@ -53,21 +57,16 @@ export const endRound = async (req, res) => {
     const group = await Group.findById(groupId);
 
     if (group) {
-        // 1. Mark Players as Finished
-        // IMPORTANT: We do NOT set groupId to null. We keep the link so the Leaderboard works.
+        // Mark players as finished (History Preserved)
         await Player.updateMany(
             { _id: { $in: group.players } },
-            { 
-              status: 'finished', 
-              alreadyPlayed: true 
-            }
+            { status: 'finished', alreadyPlayed: true }
         );
-        
-        // 2. Mark Group as Completed (Do NOT Delete)
+        // Mark group finished
         await Group.updateOne({ _id: groupId }, { roundCompleted: true, currentRound: false });
     }
 
-    // 3. Mark Round as Inactive (Do NOT Delete)
+    // Archive Round
     activeRound.active = false;
     activeRound.endTime = new Date();
     activeRound.remainingTime = 0;
@@ -75,9 +74,8 @@ export const endRound = async (req, res) => {
 
     stopGlobalCountdown();
 
-    res.json({ message: 'Round ended. History preserved for leaderboard.' });
+    res.json({ message: 'Round ended successfully.' });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: 'Server error' });
   }
 };

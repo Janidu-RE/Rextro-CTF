@@ -1,6 +1,5 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
 
-// Initialize token from localStorage to prevent logout on refresh
 let authToken = localStorage.getItem('token') || null;
 
 export const setAuthToken = (token) => {
@@ -18,7 +17,6 @@ export const getAuthToken = () => {
 
 const apiRequest = async (endpoint, options = {}) => {
   const url = `${API_BASE_URL}${endpoint}`;
-  
   const config = {
     headers: {
       'Content-Type': 'application/json',
@@ -26,31 +24,23 @@ const apiRequest = async (endpoint, options = {}) => {
     },
     ...options,
   };
-
   if (authToken) {
     config.headers.Authorization = `Bearer ${authToken}`;
   }
 
   try {
     const response = await fetch(url, config);
-    
-    // Handle HTTP Errors
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
-
-    // Handle Empty Responses
     const text = await response.text();
     return text ? JSON.parse(text) : {};
-
   } catch (error) {
     console.error('API request failed:', error);
     throw error;
   }
 };
-
-// --- API Definitions ---
 
 export const authAPI = {
   login: async (username, password) => {
@@ -58,94 +48,52 @@ export const authAPI = {
       method: 'POST',
       body: JSON.stringify({ username, password }),
     });
-    if (data.token) {
-      setAuthToken(data.token);
-    }
+    if (data.token) setAuthToken(data.token);
     return data;
   },
-  logout: () => {
-    setAuthToken(null);
-  }
+  logout: () => setAuthToken(null)
 };
 
 export const playersAPI = {
   getAll: () => apiRequest('/players'),
-  create: (name, whatsapp) => 
-    apiRequest('/players', {
-      method: 'POST',
-      body: JSON.stringify({ name, whatsapp }),
-    }),
-  delete: (id) => 
-    apiRequest(`/players/${id}`, {
-      method: 'DELETE',
-    }),
+  create: (name, whatsapp) => apiRequest('/players', { method: 'POST', body: JSON.stringify({ name, whatsapp }) }),
+  delete: (id) => apiRequest(`/players/${id}`, { method: 'DELETE' }),
 };
 
 export const groupsAPI = {
   getAll: () => apiRequest('/groups'),
-  update: (id, data) => 
-    apiRequest(`/groups/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    }),
-  updateBulkTimes: (groupId, startTime) => 
-    apiRequest(`/groups/update-times/${groupId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ startTime }),
-    }),
-  addPlayer: (groupId, playerId) => 
-    apiRequest(`/groups/${groupId}/players/${playerId}`, {
-      method: 'POST',
-    }),
-  removePlayer: (groupId, playerId) => 
-    apiRequest(`/groups/${groupId}/players/${playerId}`, {
-      method: 'DELETE',
-    }),
+  update: (id, data) => apiRequest(`/groups/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  updateBulkTimes: (groupId, startTime) => apiRequest(`/groups/update-times/${groupId}`, { method: 'PUT', body: JSON.stringify({ startTime }) }),
+  addPlayer: (groupId, playerId) => apiRequest(`/groups/${groupId}/players/${playerId}`, { method: 'POST' }),
+  removePlayer: (groupId, playerId) => apiRequest(`/groups/${groupId}/players/${playerId}`, { method: 'DELETE' }),
 };
 
 export const roundsAPI = {
   getCurrent: () => apiRequest('/rounds/current'),
-  start: (groupId) => 
-    apiRequest('/rounds/start', {
-      method: 'POST',
-      body: JSON.stringify({ groupId }),
-    }),
-  end: () => 
-    apiRequest('/rounds/end', {
-      method: 'POST',
-    }),
-  updateTime: (remainingTime) => 
-    apiRequest('/rounds/update-time', {
-      method: 'PUT',
-      body: JSON.stringify({ remainingTime }),
-    }),
+  // Updated to include flagSet
+  start: (groupId, flagSet) => apiRequest('/rounds/start', { 
+    method: 'POST', 
+    body: JSON.stringify({ groupId, flagSet }) 
+  }),
+  end: () => apiRequest('/rounds/end', { method: 'POST' }),
+  updateTime: (remainingTime) => apiRequest('/rounds/update-time', { method: 'PUT', body: JSON.stringify({ remainingTime }) }),
 };
 
-// ADDED: Flag Management API
 export const flagsAPI = {
   getAll: () => apiRequest('/flags'),
-  create: (name, code, points) => 
+  // Updated to include task details
+  create: (title, description, link, code, points, setNumber) => 
     apiRequest('/flags', {
       method: 'POST',
-      body: JSON.stringify({ name, code, points }),
+      body: JSON.stringify({ title, description, link, code, points, setNumber }),
     }),
-  delete: (id) => 
-    apiRequest(`/flags/${id}`, {
-      method: 'DELETE',
-    }),
+  delete: (id) => apiRequest(`/flags/${id}`, { method: 'DELETE' }),
 };
 
 export const gameAPI = {
-  login: (whatsapp) => 
-    apiRequest('/game/login', {
-      method: 'POST',
-      body: JSON.stringify({ whatsapp }),
-    }),
-  submitFlag: (playerId, flagCode) => 
-    apiRequest('/game/submit', {
-      method: 'POST',
-      body: JSON.stringify({ playerId, flagCode }),
-    }),
+  login: (whatsapp) => apiRequest('/game/login', { method: 'POST', body: JSON.stringify({ whatsapp }) }),
+  submitFlag: (playerId, flagCode) => apiRequest('/game/submit', { method: 'POST', body: JSON.stringify({ playerId, flagCode }) }),
   getLeaderboard: () => apiRequest('/game/leaderboard'),
-  getStatus: () => apiRequest('/game/status'), 
+  getStatus: () => apiRequest('/game/status'),
+  getChallenges: () => apiRequest('/game/challenges'), // New
 };

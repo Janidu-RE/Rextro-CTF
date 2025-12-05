@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import PlayerManagement from '../components/PlayerManagement';
 import RoundControl from '../components/RoundControl';
 import FlagManagement from '../components/FlagManagement';
-import { Flag, ArrowLeft } from 'lucide-react';
+import { Flag, ArrowLeft, Clock, Trophy, LayoutDashboard } from 'lucide-react';
 
 const SuperAdmin = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  // Toggle between dashboard and flag management
   const [showFlags, setShowFlags] = useState(false);
 
   return (
@@ -20,10 +23,31 @@ const SuperAdmin = () => {
               <p className="text-gray-400 text-sm">System Command Center</p>
             </div>
             <div className="flex items-center space-x-4">
-              {/* Toggle View Button */}
+              
+              {/* Navigation Buttons */}
+              <button 
+                onClick={() => navigate('/countdown')}
+                className="hidden md:flex items-center gap-2 bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-sm text-white transition-colors"
+              >
+                <Clock size={16} /> Countdown
+              </button>
+              <button 
+                onClick={() => navigate('/leaderboard')}
+                className="hidden md:flex items-center gap-2 bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-sm text-white transition-colors"
+              >
+                <Trophy size={16} /> Leaderboard
+              </button>
+
+              <div className="h-6 w-px bg-gray-700 mx-2 hidden sm:block"></div>
+
+              {/* View Toggle */}
               <button
                 onClick={() => setShowFlags(!showFlags)}
-                className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors border border-gray-600"
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors border ${
+                  showFlags 
+                    ? 'bg-blue-600 border-blue-500 text-white shadow-lg' 
+                    : 'bg-gray-700 border-gray-600 text-white hover:bg-gray-600'
+                }`}
               >
                 {showFlags ? (
                   <>
@@ -32,7 +56,7 @@ const SuperAdmin = () => {
                   </>
                 ) : (
                   <>
-                    <Flag size={18} className="text-ctf-red-500" />
+                    <Flag size={18} className="text-blue-400" />
                     <span>Manage Flags</span>
                   </>
                 )}
@@ -57,27 +81,26 @@ const SuperAdmin = () => {
         
         {showFlags ? (
           /* Flag Management View */
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-300 space-y-8">
-             <div className="flex items-center gap-3 mb-6">
-                <h2 className="text-2xl font-bold text-white pl-4 border-l-4 border-ctf-red-500">
-                  Flag Configuration
-                </h2>
-             </div>
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-300 space-y-8 h-[calc(100vh-140px)]">
              <FlagManagement />
           </div>
         ) : (
-          /* Dashboard View - Reverted to Original Layout */
+          /* Dashboard View */
           <div className="animate-in fade-in slide-in-from-left-4 duration-300">
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
               {/* Player Management Section */}
               <div>
-                <h2 className="text-3xl font-bold text-white mb-6">Player Management</h2>
+                <h2 className="text-3xl font-bold text-white mb-6 flex items-center gap-3">
+                  <LayoutDashboard className="text-yellow-500" /> Player Management
+                </h2>
                 <PlayerManagement />
               </div>
 
               {/* Round Control Section */}
               <div>
-                <h2 className="text-3xl font-bold text-white mb-6">Round Control</h2>
+                <h2 className="text-3xl font-bold text-white mb-6 flex items-center gap-3">
+                  <Clock className="text-green-500" /> Round Control
+                </h2>
                 <RoundControl />
               </div>
             </div>
