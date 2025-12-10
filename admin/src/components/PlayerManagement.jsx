@@ -1,13 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
+import { useToast } from '../context/ToastContext';
+import { Trash, UserPlus, Users, Search, RefreshCw, Smartphone } from 'lucide-react';
+import { groupsAPI } from '../services/api';
 
 const PlayerManagement = () => {
-  const { queue, groups, addPlayer, removePlayer, updateGroupTime, addPlayerToGroup, removePlayerFromGroup } = useData();
-  const [playerName, setPlayerName] = useState('');
-  const [whatsappNumber, setWhatsappNumber] = useState('');
+  const { queue, groups, addPlayer, removePlayer, updateGroupTime, addPlayerToGroup, removePlayerFromGroup, createGroup } = useData();
+  const { addToast } = useToast();
+  const [newPlayerName, setNewPlayerName] = useState('');
+  const [newPlayerWhatsapp, setNewPlayerWhatsapp] = useState('');
+  const [activeTab, setActiveTab] = useState('queue');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [openGroups, setOpenGroups] = useState({});
+
+  const handleCreatePlayer = async (e) => {
+    e.preventDefault();
+    if (!newPlayerName || !newPlayerWhatsapp) {
+      addToast('Please enter both player name and WhatsApp number', 'warning');
+      return;
+    }
+    
+    try {
+      await addPlayer(newPlayerName, newPlayerWhatsapp);
+      setNewPlayerName('');
+      setNewPlayerWhatsapp('');
+      addToast('Player Added Successfully', 'success');
+    } catch (error) {
+      if (error.response && error.response.status === 400) {
+        addToast(error.response.data.message || 'User already registered', 'error');
+      } else {
+        addToast('Failed to create player', 'error');
+      }
+    }
+  };
 
   // Collapse state for groups
-  const [openGroups, setOpenGroups] = useState({});
   const toggleGroup = (id) => {
     setOpenGroups(prev => ({
       ...prev,
@@ -15,7 +42,7 @@ const PlayerManagement = () => {
     }));
   };
 
-  // ⬅️ UPDATED: Sync time across all groups via backend
+  // Sync time across all groups via backend
   const handleTimeSync = async (changedGroupId, newTime) => {
     try {
       const response = await fetch(
@@ -24,7 +51,7 @@ const PlayerManagement = () => {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('ctf_token')}` // adjust if you store JWT differently
+            Authorization: `Bearer ${localStorage.getItem('ctf_token')}`
           },
           body: JSON.stringify({ startTime: newTime })
         }
@@ -33,15 +60,10 @@ const PlayerManagement = () => {
       if (!response.ok) {
         throw new Error('Failed to update group times');
       }
-
-      const updatedGroups = await response.json();
-
-      // Update local state in context if you have a method for that
-      // Example: updateGroups(updatedGroups);
-      console.log('Groups updated successfully', updatedGroups);
+      addToast('Group times synced successfully', 'success');
     } catch (error) {
       console.error('Error updating group times:', error);
-      alert('Failed to update group times');
+      addToast('Failed to update group times', 'error');
     }
   };
 
@@ -51,17 +73,6 @@ const PlayerManagement = () => {
     const d = new Date(date);
     d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
     return d.toISOString().slice(0, 16);
-  };
-
-  const handleAddPlayer = () => {
-    if (!playerName.trim()) {
-      alert('Please enter player name');
-      return;
-    }
-
-    addPlayer(playerName, whatsappNumber);
-    setPlayerName('');
-    setWhatsappNumber('');
   };
 
   const notificationMessages = {
@@ -75,7 +86,7 @@ const PlayerManagement = () => {
 
   const copyMessageToClipboard = (message) => {
     navigator.clipboard.writeText(message).then(() => {
-      alert('Message copied to clipboard!');
+      addToast('Message copied to clipboard!', 'success');
     });
   };
 
@@ -89,33 +100,36 @@ const PlayerManagement = () => {
       <div className="bg-gray-750 p-6 rounded-2xl border border-ctf-red-700">
         <h3 className="text-2xl font-bold text-ctf-red-400 mb-4">Add Player to Queue</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-gray-300 text-sm font-medium mb-2">
-              Player Name
-            </label>
-            <input
-              type="text"
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-ctf-red-500 text-lg"
-              placeholder="Enter player name"
-            />
+            <div className="md:col-span-2">
+              <label className="block text-gray-400 text-sm font-medium mb-1 pl-1 uppercase tracking-wider">Operator Codename</label>
+              <div className="relative">
+                <Users className="absolute left-3 top-3.5 text-gray-500" size={18} />
+                <input
+                  type="text"
+                  value={newPlayerName}
+                  onChange={(e) => setNewPlayerName(e.target.value)}
+                  placeholder="e.g. Cipher"
+                  className="w-full pl-10 pr-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none transition-all placeholder-gray-500"
+                />
+              </div>
+            </div>
+            
+            <div className="md:col-span-2">
+              <label className="block text-gray-400 text-sm font-medium mb-1 pl-1 uppercase tracking-wider">Secure Comms (WhatsApp)</label>
+              <div className="relative">
+                <Smartphone className="absolute left-3 top-3.5 text-gray-500" size={18} />
+                <input
+                  type="text"
+                  value={newPlayerWhatsapp}
+                  onChange={(e) => setNewPlayerWhatsapp(e.target.value)}
+                  placeholder="077xxxxxxx"
+                  className="w-full pl-10 pr-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none transition-all placeholder-gray-500 font-mono"
+                />
+              </div>
+            </div>
           </div>
-          <div>
-            <label className="block text-gray-300 text-sm font-medium mb-2">
-              WhatsApp Number
-            </label>
-            <input
-              type="tel"
-              value={whatsappNumber}
-              onChange={(e) => setWhatsappNumber(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-ctf-red-500 text-lg"
-              placeholder="0XXXXXXXXX"
-            />
-          </div>
-        </div>
         <button
-          onClick={handleAddPlayer}
+          onClick={handleCreatePlayer}
           className="bg-ctf-red-600 hover:bg-ctf-red-700 px-6 py-3 rounded-lg text-white font-semibold text-lg w-full"
         >
           Add Player to Queue
@@ -151,9 +165,21 @@ const PlayerManagement = () => {
 
       {/* Groups */}
       <div className="bg-gray-750 p-6 rounded-2xl border border-ctf-red-700">
-        <h3 className="text-2xl font-bold text-ctf-red-400 mb-4">
-          Teams ({groups.filter(g => !g.roundCompleted).length} active teams)
-        </h3>
+        <div className="flex justify-between items-center mb-4">
+            <h3 className="text-2xl font-bold text-ctf-red-400">
+            Teams ({groups.filter(g => !g.roundCompleted).length} active teams)
+            </h3>
+            <button
+                onClick={() => {
+                    if (window.confirm('Create a new empty team?')) {
+                        createGroup();
+                    }
+                }}
+                className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-white font-semibold flex items-center gap-2"
+            >
+                <span>+</span> Create New Team
+            </button>
+        </div>
 
         <div className="grid gap-6">
           {groups.filter(g => !g.roundCompleted).map((group, index) => (
@@ -164,7 +190,7 @@ const PlayerManagement = () => {
                 onClick={() => toggleGroup(group._id)}
                 className="w-full flex justify-between items-center p-4 bg-gray-600 rounded-xl cursor-pointer"
               >
-                <h4 className="text-white font-bold text-xl">Team {index + 1}</h4>
+                <h4 className="text-white font-bold text-xl">{group.name}</h4>
                 <span className="text-gray-300 text-sm">{group.players.length}/6 players</span>
                 <span className="text-gray-300 text-xl">
                   {openGroups[group._id] ? "▲" : "▼"}
@@ -175,7 +201,7 @@ const PlayerManagement = () => {
               {openGroups[group._id] && (
                 <div className="p-6 space-y-6">
 
-                  {/* Start Time — UPDATED */}
+                  {/* Start Time */}
                   <div>
                     <label className="block text-gray-300 text-sm font-medium mb-2">
                       Start Time

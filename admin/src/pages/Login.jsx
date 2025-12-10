@@ -23,7 +23,7 @@ const Login = () => {
           navigate('/round-manager');
           break;
         default:
-          navigate('/login');
+          navigate('/ctf-admin-portal');
       }
     }
   }, [user, navigate]);
@@ -47,7 +47,7 @@ const Login = () => {
           navigate('/round-manager');
           break;
         default:
-          navigate('/login');
+          navigate('/ctf-admin-portal');
       }
     } catch (err) {
       setError(err.message);

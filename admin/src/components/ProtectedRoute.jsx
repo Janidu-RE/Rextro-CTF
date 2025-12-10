@@ -6,7 +6,7 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
   const { user } = useAuth();
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/ctf-admin-portal" replace />;
   }
 
   if (requiredRole && user.role !== requiredRole) {
@@ -19,7 +19,7 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
       case 'round_manager':
         return <Navigate to="/round-manager" replace />;
       default:
-        return <Navigate to="/login" replace />;
+        return <Navigate to="/ctf-admin-portal" replace />;
     }
   }
 

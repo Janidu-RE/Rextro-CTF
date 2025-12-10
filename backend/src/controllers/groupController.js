@@ -10,6 +10,54 @@ export const getGroups = async (req, res) => {
   }
 };
 
+export const createGroup = async (req, res) => {
+  try {
+    // 1. Determine Start Time
+    const lastGroup = await Group.findOne().sort({ startTime: -1 });
+    let nextStartTime = new Date();
+
+    if (lastGroup) {
+      nextStartTime = new Date(lastGroup.startTime);
+      nextStartTime.setMinutes(nextStartTime.getMinutes() + 30);
+    } else {
+      nextStartTime.setMinutes(nextStartTime.getMinutes() + 30);
+    }
+
+    // 2. Generate Sequential Name (Team 1, Team 2, ...)
+    // Find all groups whose name starts with "Team "
+    const existingGroups = await Group.find({ name: /^Team \d+$/ });
+
+    let nextTeamNumber = 1;
+    if (existingGroups.length > 0) {
+      const numbers = existingGroups.map(g => {
+        const match = g.name.match(/^Team (\d+)$/);
+        return match ? parseInt(match[1], 10) : 0;
+      })
+        // Filter out unreasonably large numbers (timestamps) to avoid "Team 173..."
+        .filter(n => n < 1000000);
+
+      if (numbers.length > 0) {
+        nextTeamNumber = Math.max(...numbers) + 1;
+      }
+    }
+
+    const newGroup = new Group({
+      name: `Team ${nextTeamNumber}`,
+      players: [],
+      startTime: nextStartTime
+    });
+
+    await newGroup.save();
+
+    // Return all groups to refresh UI
+    const groups = await Group.find().populate('players');
+    res.json(groups);
+  } catch (error) {
+    console.error('Create group error:', error);
+    res.status(500).json({ message: 'Error creating group' });
+  }
+};
+
 export const updateGroupTime = async (req, res) => {
   try {
     const { id } = req.params;

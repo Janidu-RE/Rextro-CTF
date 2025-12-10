@@ -32,7 +32,12 @@ const apiRequest = async (endpoint, options = {}) => {
     const response = await fetch(url, config);
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      const error = new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      error.response = {
+        status: response.status,
+        data: errorData
+      };
+      throw error;
     }
     const text = await response.text();
     return text ? JSON.parse(text) : {};
@@ -62,6 +67,7 @@ export const playersAPI = {
 
 export const groupsAPI = {
   getAll: () => apiRequest('/groups'),
+  create: () => apiRequest('/groups', { method: 'POST' }),
   update: (id, data) => apiRequest(`/groups/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   updateBulkTimes: (groupId, startTime) => apiRequest(`/groups/update-times/${groupId}`, { method: 'PUT', body: JSON.stringify({ startTime }) }),
   addPlayer: (groupId, playerId) => apiRequest(`/groups/${groupId}/players/${playerId}`, { method: 'POST' }),
@@ -77,7 +83,7 @@ export const roundsAPI = {
 
 export const flagsAPI = {
   getAll: () => apiRequest('/flags'),
-  create: (title, description, link, code, points, setNumber) => 
+  create: (title, description, link, code, points, setNumber) =>
     apiRequest('/flags', { method: 'POST', body: JSON.stringify({ title, description, link, code, points, setNumber }) }),
   delete: (id) => apiRequest(`/flags/${id}`, { method: 'DELETE' }),
 };

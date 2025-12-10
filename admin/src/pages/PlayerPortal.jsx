@@ -124,7 +124,7 @@ const PlayerPortal = () => {
 
     try {
       const playerData = await gameAPI.login(whatsapp);
-      alert("User already registered");
+      
       setPlayer(playerData);
       localStorage.setItem('ctf_player', JSON.stringify(playerData));
       setMessage({ type: 'success', text: 'Access Granted. Welcome, Operator.' });

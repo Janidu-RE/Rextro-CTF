@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
+import { ToastProvider } from './context/ToastContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import SuperAdmin from './pages/SuperAdmin';
@@ -16,11 +17,12 @@ function App() {
   return (
     <AuthProvider>
       <DataProvider>
+        <ToastProvider> 
         <Router>
           <div className="App">
             <Routes>
               {/* Public Routes */}
-              <Route path="/login" element={<Login />} />
+              <Route path="/ctf-admin-portal" element={<Login />} />
 
               <Route path="/challenges" element={<Challenges />} />
               
@@ -59,16 +61,16 @@ function App() {
               />
 
               <Route
-                path='player'
+                path='/'
                 element = {<PlayerPortal/>}
                 />
               
               {/* Default redirect */}
-              <Route path="/" element={<Navigate to="/login" replace />} />
-              <Route path="*" element={<Navigate to="/login" replace />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
         </Router>
+        </ToastProvider>
       </DataProvider>
     </AuthProvider>
   );

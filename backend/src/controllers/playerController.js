@@ -22,6 +22,9 @@ export const createPlayer = async (req, res) => {
     const players = await Player.find().populate('groupId');
     res.json(players);
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'User already registered' });
+    }
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -30,7 +33,7 @@ export const deletePlayer = async (req, res) => {
   try {
     const { id } = req.params;
     await Player.findByIdAndDelete(id);
-    
+
     await Group.updateMany({ players: id }, { $pull: { players: id } });
     await Group.deleteMany({ players: { $size: 0 } });
 

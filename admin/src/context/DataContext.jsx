@@ -107,6 +107,16 @@ export const DataProvider = ({ children }) => {
     }
   };
 
+  // Create a new manual group
+  const createGroup = async () => {
+    try {
+      const updatedGroups = await groupsAPI.create();
+      setGroups(updatedGroups);
+    } catch (error) {
+      throw error;
+    }
+  };
+
   // Start a round for a specific group
   const startRoundForGroup = async (groupId) => {
     try {
@@ -148,6 +158,7 @@ export const DataProvider = ({ children }) => {
     loading,
     addPlayer,
     removePlayer,
+    createGroup,
     updateGroupTime,
     addPlayerToGroup,
     removePlayerFromGroup,
