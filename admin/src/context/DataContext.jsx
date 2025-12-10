@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { playersAPI, groupsAPI, roundsAPI, setAuthToken } from '../../../backend/src/services/api';
+import { playersAPI, groupsAPI, roundsAPI, setAuthToken } from '../services/api';
 
 const DataContext = createContext();
 

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { roundsAPI, groupsAPI } from '../../../backend/src/services/api.js';
-import { Play, Square, Clock, AlertTriangle } from 'lucide-react';
+import { roundsAPI, groupsAPI } from '../services/api.js';
+import { Play, Square, Clock, Key } from 'lucide-react';
 
 const RoundControl = () => {
   const [currentRound, setCurrentRound] = useState(null);
   const [groups, setGroups] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState('');
-  const [selectedSet, setSelectedSet] = useState('1'); // Select Set 1, 2, or 3
+  const [selectedSet, setSelectedSet] = useState('1'); 
   const [loading, setLoading] = useState(false);
 
   const refreshData = async () => {
@@ -32,7 +32,6 @@ const RoundControl = () => {
     if (!selectedGroup) return alert("Select a team first");
     setLoading(true);
     try {
-      // Send selected set to backend
       await roundsAPI.start(selectedGroup, parseInt(selectedSet));
       refreshData();
     } catch (error) {
@@ -73,13 +72,22 @@ const RoundControl = () => {
       <div className="flex-1 flex flex-col justify-center space-y-6">
         {currentRound && currentRound.active ? (
           <div className="text-center space-y-4">
-            <div className="p-6 bg-gray-900/50 rounded-xl border border-ctf-red-900/30">
-              <div className="text-gray-400 text-sm uppercase tracking-wider mb-2">Active Mission</div>
-              <div className="text-3xl font-black text-white mb-2">
+            
+            {/* Session ID Display */}
+            <div className="p-4 bg-blue-900/20 border border-blue-500/50 rounded-lg animate-in zoom-in duration-300">
+                <div className="flex items-center justify-center gap-2 text-blue-400 mb-2">
+                    <Key size={18} /> <span className="text-sm font-bold uppercase">Session Key</span>
+                </div>
+                <div className="text-4xl font-mono font-black text-white tracking-widest select-all cursor-pointer">
+                    {currentRound.sessionId || "----"}
+                </div>
+                <div className="text-xs text-blue-500 mt-2">Share this code with players to unlock portal</div>
+            </div>
+
+            <div className="p-4 bg-gray-900/50 rounded-lg border border-gray-700">
+              <div className="text-gray-400 text-sm uppercase tracking-wider mb-1">Active Team</div>
+              <div className="text-2xl font-bold text-white">
                 {currentRound.groupId?.name || "Unknown Team"}
-              </div>
-              <div className="inline-block bg-blue-900/30 text-blue-400 px-3 py-1 rounded text-sm border border-blue-800">
-                Running Flag Set {currentRound.flagSet}
               </div>
             </div>
             

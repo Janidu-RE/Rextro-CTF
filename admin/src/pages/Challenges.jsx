@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { gameAPI } from '../../../backend/src/services/api.js';
+import { gameAPI } from '../services/api.js';
 import { ArrowLeft, ExternalLink, Terminal, Shield, Lock, FileCode, AlertTriangle } from 'lucide-react';
 
 const Challenges = () => {

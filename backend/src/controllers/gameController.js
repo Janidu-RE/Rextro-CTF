@@ -2,7 +2,29 @@ import Player from '../models/Player.js';
 import Flag from '../models/Flag.js';
 import Round from '../models/Round.js';
 
-// ... (keep playerLogin and submitFlag from previous versions) ...
+// --- NEW: Verify Session ID ---
+export const verifySession = async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+    
+    // Find active round with this session ID
+    const round = await Round.findOne({ active: true, sessionId });
+
+    if (!round) {
+      return res.status(401).json({ valid: false, message: 'Invalid or Inactive Session ID' });
+    }
+
+    // Check expiry
+    if (new Date() > round.sessionExpiresAt) {
+      return res.status(401).json({ valid: false, message: 'Session ID has expired' });
+    }
+
+    res.json({ valid: true, message: 'Session Validated' });
+  } catch (error) {
+    res.status(500).json({ message: 'Verification error' });
+  }
+};
+
 export const playerLogin = async (req, res) => {
   try {
     const { whatsapp } = req.body;
@@ -21,9 +43,8 @@ export const submitFlag = async (req, res) => {
     const flag = await Flag.findOne({ code: flagCode });
     if (!flag) return res.status(404).json({ message: 'Invalid Flag Code.' });
 
-    // Enforce Set Rules
     if (flag.setNumber !== round.flagSet) {
-      return res.status(400).json({ message: 'This flag is not part of the active set!' });
+      return res.status(400).json({ message: 'This flag is not active for the current round.' });
     }
 
     const player = await Player.findById(playerId);
@@ -64,16 +85,12 @@ export const getGameStatus = async (req, res) => {
   } catch (error) { res.status(500).json({ message: 'Status error' }); }
 };
 
-// --- NEW: Fetch Tasks for Active Set ---
 export const getChallenges = async (req, res) => {
   try {
     const activeRound = await Round.findOne({ active: true });
     if (!activeRound) return res.json([]); 
-
-    // Only return flags for the active set
     const tasks = await Flag.find({ setNumber: activeRound.flagSet })
-      .select('title description link points setNumber'); // Don't send the code!
-
+      .select('title description link points setNumber');
     res.json(tasks);
   } catch (error) { res.status(500).json({ message: 'Error fetching tasks' }); }
 };

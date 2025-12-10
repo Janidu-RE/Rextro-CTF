@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { gameAPI } from '../../../backend/src/services/api.js'; 
+import { useNavigate } from 'react-router-dom'; 
+import { gameAPI } from '../services/api.js'; 
 import Leaderboard from '../pages/Leaderboard.jsx';
-import { Flag, LogIn, Trophy, AlertCircle, CheckCircle, LogOut, Clock, WifiOff, LayoutGrid, ArrowRight } from 'lucide-react';
+import { Flag, LogIn, Trophy, AlertCircle, CheckCircle, LogOut, Clock, WifiOff, LayoutGrid, ArrowRight, Lock, Key } from 'lucide-react';
 
 const PlayerPortal = () => {
-  const navigate = useNavigate();
+  const navigate = useNavigate(); 
 
   // Try to recover session from localStorage
   const [player, setPlayer] = useState(() => {
     const saved = localStorage.getItem('ctf_player');
     return saved ? JSON.parse(saved) : null;
   });
+
+  const [sessionToken, setSessionToken] = useState(() => localStorage.getItem('ctf_session'));
+  const [sessionInput, setSessionInput] = useState('');
 
   const [whatsapp, setWhatsapp] = useState('');
   const [flagCode, setFlagCode] = useState('');
@@ -23,14 +26,53 @@ const PlayerPortal = () => {
   const [roundActive, setRoundActive] = useState(false);
   const [connectionError, setConnectionError] = useState(false);
 
-  // --- TIMER LOGIC ---
+  // --- 1. VERIFY SESSION ON LOAD ---
   useEffect(() => {
-    if (!player) return;
+    if (sessionToken) {
+        verifySession(sessionToken);
+    }
+  }, []);
+
+  const verifySession = async (token) => {
+      try {
+          // If verifySession endpoint exists, use it. 
+          // Otherwise rely on login flow or implement verifySession in gameAPI
+          if (gameAPI.verifySession) {
+             await gameAPI.verifySession(token);
+          }
+      } catch (err) {
+          console.error("Session Invalid");
+          localStorage.removeItem('ctf_session');
+          setSessionToken(null);
+          setPlayer(null); 
+      }
+  };
+
+  const handleSessionSubmit = async (e) => {
+      e.preventDefault();
+      setLoading(true);
+      setMessage({ type: '', text: '' });
+      try {
+          if (gameAPI.verifySession) {
+            await gameAPI.verifySession(sessionInput.trim());
+          }
+          localStorage.setItem('ctf_session', sessionInput.trim());
+          setSessionToken(sessionInput.trim());
+      } catch (err) {
+          setMessage({ type: 'error', text: 'Invalid or Expired Session ID' });
+      } finally {
+          setLoading(false);
+      }
+  };
+
+  // --- 2. TIMER LOGIC ---
+  useEffect(() => {
+    if (!player || !sessionToken) return;
 
     const fetchGameStatus = async () => {
       try {
         if (!gameAPI.getStatus) {
-          throw new Error("gameAPI.getStatus is undefined. Check api.js");
+          throw new Error("gameAPI.getStatus is undefined.");
         }
 
         const status = await gameAPI.getStatus();
@@ -64,7 +106,7 @@ const PlayerPortal = () => {
       clearInterval(syncInterval);
       clearInterval(timerInterval);
     };
-  }, [player]);
+  }, [player, sessionToken]);
 
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
@@ -137,16 +179,58 @@ const PlayerPortal = () => {
     return "ROUND OFFLINE";
   };
 
+  // --- RENDER 1: SESSION GATE (LOCKED) ---
+  if (!sessionToken) {
+      return (
+        <div className="min-h-screen bg-black flex items-center justify-center p-4 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-b from-gray-900 via-black to-red-900/10"></div>
+            
+            <div className="relative w-full max-w-md bg-gray-900/80 backdrop-blur-xl border border-red-900/50 rounded-2xl p-8 shadow-2xl text-center">
+                <div className="flex justify-center mb-6">
+                    <div className="bg-red-900/20 p-4 rounded-full border border-red-500/50 shadow-[0_0_20px_rgba(220,38,38,0.3)] animate-pulse">
+                        <Lock size={48} className="text-red-500" />
+                    </div>
+                </div>
+                <h1 className="text-3xl font-black text-white mb-2 tracking-tighter">SYSTEM LOCKED</h1>
+                <p className="text-gray-400 mb-8">Enter the session key provided by the administrator to access the mission portal.</p>
+
+                <form onSubmit={handleSessionSubmit} className="space-y-6">
+                    <div className="relative">
+                        <Key className="absolute left-4 top-3.5 text-gray-500" size={20} />
+                        <input 
+                            type="text" 
+                            value={sessionInput}
+                            onChange={(e) => setSessionInput(e.target.value.toUpperCase())}
+                            placeholder="SESSION KEY (e.g. X9J-22K)"
+                            className="w-full bg-black/50 border border-gray-600 text-white text-xl pl-12 pr-4 py-3 rounded-lg focus:border-red-500 focus:outline-none transition-colors font-mono tracking-widest placeholder-gray-700"
+                            required
+                        />
+                    </div>
+                    {message.text && (
+                        <div className="p-3 bg-red-900/30 text-red-400 rounded-lg text-sm font-bold border border-red-900/50">
+                            {message.text}
+                        </div>
+                    )}
+                    <button type="submit" disabled={loading} className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-lg transition-all shadow-lg shadow-red-900/20">
+                        {loading ? 'VERIFYING...' : 'AUTHENTICATE SESSION'}
+                    </button>
+                </form>
+            </div>
+        </div>
+      );
+  }
+
+  // --- RENDER 2: LOGIN SCREEN (SESSION UNLOCKED) ---
   if (!player) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center p-4 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-gray-900 via-black to-red-900/10"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-gray-900 via-black to-blue-900/10"></div>
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-gray-800/20 via-black to-black"></div>
 
-        <div className="relative w-full max-w-md bg-gray-900/80 backdrop-blur-xl border border-gray-700 rounded-2xl p-8 shadow-[0_0_50px_rgba(220,38,38,0.1)]">
+        <div className="relative w-full max-w-md bg-gray-900/80 backdrop-blur-xl border border-gray-700 rounded-2xl p-8 shadow-2xl">
           <div className="text-center mb-8">
             <h1 className="text-5xl font-black text-white mb-2 tracking-tighter">CTF PORTAL</h1>
-            <p className="text-gray-400">Enter your credentials to join the operation.</p>
+            <p className="text-green-400 font-mono text-xs uppercase tracking-widest">SESSION VERIFIED • SECURE CONNECTION</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-6">
@@ -175,11 +259,7 @@ const PlayerPortal = () => {
               disabled={loading}
               className="w-full bg-ctf-red-600 hover:bg-ctf-red-700 text-white font-bold py-4 rounded-lg transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {loading ? (
-                <span className="animate-pulse">Authenticating...</span>
-              ) : (
-                <><LogIn size={20} /> INITIALIZE UPLINK</>
-              )}
+              {loading ? <span className="animate-pulse">Authenticating...</span> : <><LogIn size={20} /> INITIALIZE UPLINK</>}
             </button>
           </form>
         </div>
@@ -187,6 +267,7 @@ const PlayerPortal = () => {
     );
   }
 
+  // --- RENDER 3: GAME DASHBOARD ---
   return (
     <div className="min-h-screen bg-black text-white pb-20 font-sans">
       
@@ -203,7 +284,7 @@ const PlayerPortal = () => {
             </div>
           </div>
           
-          {/* Desktop Timer Display - Bigger and Red */}
+          {/* Desktop Timer Display */}
           <div className={`hidden md:flex items-center gap-3 bg-black/60 px-6 py-3 rounded-full border border-red-900/30 shadow-[0_0_15px_rgba(220,38,38,0.2)] ${connectionError ? 'border-red-500' : ''}`}>
              <Clock className={`w-6 h-6 ${roundActive ? 'text-red-500 animate-pulse' : 'text-gray-500'}`} />
              <span className={`font-mono text-3xl font-black tracking-widest ${roundActive ? 'text-red-500 drop-shadow-[0_0_8px_rgba(220,38,38,0.8)]' : 'text-gray-500'}`}>
@@ -230,7 +311,7 @@ const PlayerPortal = () => {
         </div>
       </header>
 
-      {/* Mobile Timer Bar - Bigger and Red */}
+      {/* Mobile Timer Bar */}
       <div className="md:hidden bg-gray-900/95 border-b border-red-900/30 py-3 sticky top-[73px] z-40 flex justify-center items-center gap-3 backdrop-blur transition-all shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
          <Clock className={`w-5 h-5 ${roundActive ? 'text-red-500 animate-pulse' : 'text-gray-500'}`} />
          <span className={`font-mono text-2xl font-black tracking-widest ${roundActive ? 'text-red-500 drop-shadow-[0_0_5px_rgba(220,38,38,0.8)]' : 'text-gray-500'}`}>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { gameAPI } from '../../../backend/src/services/api.js';
+import { gameAPI } from '../services/api.js';
 import { Trophy, Medal, Target } from 'lucide-react';
 
 const Leaderboard = ({ minimal = false }) => {

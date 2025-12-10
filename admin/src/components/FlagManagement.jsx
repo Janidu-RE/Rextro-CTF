@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { flagsAPI } from '../../../backend/src/services/api.js';
+import { flagsAPI } from '../services/api.js';
 import { Trash2, Flag, Plus, Shield, Link as LinkIcon, Layers } from 'lucide-react'; 
 
 const FlagManagement = () => {

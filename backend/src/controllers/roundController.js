@@ -16,22 +16,26 @@ export const getCurrentRound = async (req, res) => {
 
 export const startRound = async (req, res) => {
   try {
-    const { groupId, flagSet } = req.body; // Admin sends flagSet now
+    const { groupId, flagSet } = req.body;
     
-    // Archive old rounds
     await Round.updateMany({ active: true }, { active: false, endTime: new Date() });
+
+    // Generate Random Session ID (6 chars)
+    const sessionId = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const sessionExpiresAt = new Date(Date.now() + 25 * 60 * 1000); // 25 Minutes expiry
 
     const round = new Round({
       groupId,
       startTime: new Date(),
       active: true,
       remainingTime: 1200,
-      flagSet: flagSet || 1 // Default to set 1 if missing
+      flagSet: flagSet || 1,
+      sessionId,
+      sessionExpiresAt
     });
 
     await round.save();
     
-    // Manage Group state
     await Group.updateMany({}, { currentRound: false });
     await Group.findByIdAndUpdate(groupId, { currentRound: true });
 
@@ -48,6 +52,8 @@ export const startRound = async (req, res) => {
   }
 };
 
+
+
 export const endRound = async (req, res) => {
   try {
     const activeRound = await Round.findOne({ active: true });
@@ -57,16 +63,13 @@ export const endRound = async (req, res) => {
     const group = await Group.findById(groupId);
 
     if (group) {
-        // Mark players as finished (History Preserved)
         await Player.updateMany(
             { _id: { $in: group.players } },
             { status: 'finished', alreadyPlayed: true }
         );
-        // Mark group finished
         await Group.updateOne({ _id: groupId }, { roundCompleted: true, currentRound: false });
     }
 
-    // Archive Round
     activeRound.active = false;
     activeRound.endTime = new Date();
     activeRound.remainingTime = 0;
