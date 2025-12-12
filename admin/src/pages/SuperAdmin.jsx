@@ -37,6 +37,12 @@ const SuperAdmin = () => {
               >
                 <Trophy size={16} /> Leaderboard
               </button>
+              <button 
+                onClick={() => navigate('/overall-leaderboard')}
+                className="hidden md:flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 px-3 py-2 rounded text-sm text-white transition-colors"
+              >
+                <Trophy size={16} /> Hall of Fame
+              </button>
 
               <div className="h-6 w-px bg-gray-700 mx-2 hidden sm:block"></div>
 

@@ -79,6 +79,8 @@ export const roundsAPI = {
   start: (groupId, flagSet) => apiRequest('/rounds/start', { method: 'POST', body: JSON.stringify({ groupId, flagSet }) }),
   end: () => apiRequest('/rounds/end', { method: 'POST' }),
   updateTime: (remainingTime) => apiRequest('/rounds/update-time', { method: 'PUT', body: JSON.stringify({ remainingTime }) }),
+  addTime: (targetType, targetId, minutes, seconds) =>
+    apiRequest('/rounds/add-time', { method: 'POST', body: JSON.stringify({ targetType, targetId, minutes, seconds }) }),
 };
 
 export const flagsAPI = {
@@ -92,7 +94,11 @@ export const gameAPI = {
   login: (whatsapp) => apiRequest('/game/login', { method: 'POST', body: JSON.stringify({ whatsapp }) }),
   submitFlag: (playerId, flagCode) => apiRequest('/game/submit', { method: 'POST', body: JSON.stringify({ playerId, flagCode }) }),
   getLeaderboard: () => apiRequest('/game/leaderboard'),
-  getStatus: () => apiRequest('/game/status'),
+  getOverallLeaderboard: () => apiRequest('/game/leaderboard/overall'), // New
+  getStatus: (playerId = null) => {
+    const url = playerId ? `/game/status?playerId=${playerId}` : '/game/status';
+    return apiRequest(url);
+  },
   getChallenges: () => apiRequest('/game/challenges'),
-  verifySession: (sessionId) => apiRequest('/game/verify-session', { method: 'POST', body: JSON.stringify({ sessionId }) }), // New
+  verifySession: (sessionId) => apiRequest('/game/verify-session', { method: 'POST', body: JSON.stringify({ sessionId }) }),
 };

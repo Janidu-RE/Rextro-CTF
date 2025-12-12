@@ -2,10 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom'; 
 import { gameAPI } from '../services/api.js'; 
 import Leaderboard from '../pages/Leaderboard.jsx';
-import { Flag, LogIn, Trophy, AlertCircle, CheckCircle, LogOut, Clock, WifiOff, LayoutGrid, ArrowRight, Lock, Key } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
+import { Flag, LogIn, Trophy, AlertCircle, CheckCircle, LogOut, Clock, WifiOff, LayoutGrid, ArrowRight, Lock, Key, Award, X } from 'lucide-react';
+import confetti from 'canvas-confetti';
+
+const HACKER_QUOTES = [
+  "Well done hacker!",
+  "System compromised. Good work.",
+  "Access granted. You're a natural.",
+  "Firewall breached. Outstanding.",
+  "Root access obtained. Keep going.",
+  "Encryption bypassed. Impressive skill.",
+  "Payload delivered. Target down.",
+  "Mainframe penetrated. excellent job."
+];
 
 const PlayerPortal = () => {
   const navigate = useNavigate(); 
+  const { addToast } = useToast();
 
   // Try to recover session from localStorage
   const [player, setPlayer] = useState(() => {
@@ -20,6 +34,7 @@ const PlayerPortal = () => {
   const [flagCode, setFlagCode] = useState('');
   const [message, setMessage] = useState({ type: '', text: '' });
   const [loading, setLoading] = useState(false);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
 
   // --- COUNTDOWN STATE ---
   const [timeLeft, setTimeLeft] = useState(0);
@@ -75,7 +90,7 @@ const PlayerPortal = () => {
           throw new Error("gameAPI.getStatus is undefined.");
         }
 
-        const status = await gameAPI.getStatus();
+        const status = await gameAPI.getStatus(player._id); // Include player ID for extra time
         
         setConnectionError(false);
 
@@ -127,9 +142,13 @@ const PlayerPortal = () => {
       
       setPlayer(playerData);
       localStorage.setItem('ctf_player', JSON.stringify(playerData));
-      setMessage({ type: 'success', text: 'Access Granted. Welcome, Operator.' });
+      addToast('Access Granted. Welcome, Operator.', 'success');
     } catch (error) {
-      setMessage({ type: 'error', text: 'Access Denied: Number not registered or server error.' });
+      if (error.response && error.response.status === 400) {
+        addToast(error.response.data.message || 'Access Denied', 'error');
+      } else {
+        addToast('Access Denied: Check number or connection.', 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -147,16 +166,55 @@ const PlayerPortal = () => {
       const response = await gameAPI.submitFlag(player._id, flagCode);
       
       const updatedPlayer = { ...player, score: response.newScore };
-      setPlayer(updatedPlayer);
-      localStorage.setItem('ctf_player', JSON.stringify(updatedPlayer));
+      // Optimistically update solved flags if backend isn't returning them in this specific response
+      // But ideally backend should return updated player or we refetch.
+      // For now, assuming backend logic works, we might need to manually push to solvedFlags to check length immediately
+      // unless we refetch player. Let's do a quick refetch to be safe or update local state if we know the ID.
+      // The current backend endpoint returns { success, message, newScore }. It DOES NOT return the full player or solvedFlags list.
+      // We need to fetch the player updates or track it locally.
+      // Let's refetch challenges status or player profile. 
+      // Actually, simplest is to just increment a local counter or fetch player.
       
-      setMessage({ type: 'success', text: response.message });
+      // We will perform a silent player refresh to get updated flags
+      const refreshedPlayer = await gameAPI.login(player.whatsapp); // Re-using login to fetch profile
+      setPlayer(refreshedPlayer);
+      localStorage.setItem('ctf_player', JSON.stringify(refreshedPlayer));
+      
+      const randomQuote = HACKER_QUOTES[Math.floor(Math.random() * HACKER_QUOTES.length)];
+      addToast(randomQuote, 'success');
       setFlagCode(''); 
+
+      // Check for completion (4 flags)
+      if (refreshedPlayer.solvedFlags && refreshedPlayer.solvedFlags.length >= 4) {
+        setShowCompletionModal(true);
+        triggerConfetti();
+      }
+
     } catch (error) {
-      setMessage({ type: 'error', text: error.message || 'Invalid Flag' });
+      addToast(error.message || 'Invalid Flag', 'error');
     } finally {
       setLoading(false);
     }
+  };
+
+  const triggerConfetti = () => {
+    const duration = 5 * 1000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 60 };
+
+    const randomInRange = (min, max) => Math.random() * (max - min) + min;
+
+    const interval = setInterval(function() {
+      const timeLeft = animationEnd - Date.now();
+
+      if (timeLeft <= 0) {
+        return clearInterval(interval);
+      }
+
+      const particleCount = 50 * (timeLeft / duration);
+      confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+      confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+    }, 250);
   };
 
   const handleLogout = () => {
@@ -206,7 +264,7 @@ const PlayerPortal = () => {
                             required
                         />
                     </div>
-                    {message.text && (
+                    {message.type === 'error' && (
                         <div className="p-3 bg-red-900/30 text-red-400 rounded-lg text-sm font-bold border border-red-900/50">
                             {message.text}
                         </div>
@@ -247,12 +305,6 @@ const PlayerPortal = () => {
                 required
               />
             </div>
-
-            {message.text && (
-              <div className={`p-3 rounded-lg text-sm text-center font-medium animate-in fade-in slide-in-from-top-2 ${message.type === 'error' ? 'bg-red-900/30 text-red-400 border border-red-900/50' : 'bg-green-900/30 text-green-400 border border-green-900/50'}`}>
-                {message.text}
-              </div>
-            )}
 
             <button
               type="submit"
@@ -354,13 +406,6 @@ const PlayerPortal = () => {
                   </div>
                 </div>
 
-                {message.text && (
-                  <div className={`flex items-center gap-2 p-3 rounded-lg text-sm font-medium animate-in fade-in slide-in-from-top-2 border ${message.type === 'error' ? 'text-red-400 bg-red-900/20 border-red-900/50' : 'text-green-400 bg-green-900/20 border-green-900/50'}`}>
-                    {message.type === 'error' ? <AlertCircle size={16} /> : <CheckCircle size={16} />}
-                    {message.text}
-                  </div>
-                )}
-
                 <button
                   type="submit"
                   disabled={loading || !flagCode || !roundActive}
@@ -403,6 +448,41 @@ const PlayerPortal = () => {
           </div>
           <Leaderboard />
         </div>
+
+        {/* COMPLETION MODAL */}
+        {showCompletionModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+             <div className="absolute inset-0 bg-black/90 backdrop-blur-md"></div>
+             <div className="relative bg-gray-900 border-2 border-green-500 rounded-2xl p-8 max-w-lg w-full text-center shadow-[0_0_50px_rgba(34,197,94,0.3)] animate-in zoom-in-95 duration-300">
+                <button 
+                  onClick={() => setShowCompletionModal(false)}
+                  className="absolute top-4 right-4 text-gray-500 hover:text-white"
+                >
+                  <X size={24} />
+                </button>
+                
+                <div className="flex justify-center mb-6">
+                   <div className="bg-green-900/30 p-6 rounded-full border border-green-500 shadow-[0_0_20px_rgba(34,197,94,0.5)]">
+                      <Award size={64} className="text-green-400" />
+                   </div>
+                </div>
+                
+                <h2 className="text-4xl font-black text-white mb-2 uppercase tracking-tight">Mission Accomplished</h2>
+                <div className="h-1 w-24 bg-green-500 mx-auto mb-6"></div>
+                
+                <p className="text-gray-300 text-lg mb-8 leading-relaxed">
+                   Incredible work, Operator. You have successfully neutralized all targets for this round. Stay vigilant for further instructions.
+                </p>
+                
+                <button 
+                  onClick={() => setShowCompletionModal(false)}
+                  className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-green-900/30 transition-all w-full text-lg"
+                >
+                  ACKNOWLEDGE
+                </button>
+             </div>
+          </div>
+        )}
 
       </main>
     </div>

@@ -6,7 +6,7 @@ import Round from '../models/Round.js';
 export const verifySession = async (req, res) => {
   try {
     const { sessionId } = req.body;
-    
+
     // Find active round with this session ID
     const round = await Round.findOne({ active: true, sessionId });
 
@@ -66,7 +66,7 @@ export const getLeaderboard = async (req, res) => {
   try {
     let targetRound = await Round.findOne({ active: true });
     if (!targetRound) targetRound = await Round.findOne({ active: false }).sort({ endTime: -1 });
-    
+
     if (!targetRound) return res.json([]);
 
     const leaderboard = await Player.find({ groupId: targetRound.groupId })
@@ -77,18 +77,45 @@ export const getLeaderboard = async (req, res) => {
   } catch (error) { res.status(500).json({ message: 'Leaderboard error' }); }
 };
 
+export const getOverallLeaderboard = async (req, res) => {
+  try {
+    // Fetch ALL players, regardless of group
+    const leaderboard = await Player.find({})
+      .select('name score solvedFlags whatsapp status')
+      .sort({ score: -1, lastSubmissionTime: 1 }); // Higher score first, then earlier submission time
+
+    res.json(leaderboard);
+  } catch (error) {
+    res.status(500).json({ message: 'Overall Leaderboard error' });
+  }
+};
+
 export const getGameStatus = async (req, res) => {
   try {
+    const { playerId } = req.query;
     const activeRound = await Round.findOne({ active: true });
+
     if (!activeRound) return res.json({ active: false, remainingTime: 0 });
-    res.json({ active: true, remainingTime: activeRound.remainingTime });
+
+    let extraTime = 0;
+    if (playerId) {
+      const player = await Player.findById(playerId);
+      if (player) {
+        extraTime = player.extraTime || 0;
+      }
+    }
+
+    // Don't go below 0
+    const finalRemaining = Math.max(0, activeRound.remainingTime + extraTime);
+
+    res.json({ active: true, remainingTime: finalRemaining });
   } catch (error) { res.status(500).json({ message: 'Status error' }); }
 };
 
 export const getChallenges = async (req, res) => {
   try {
     const activeRound = await Round.findOne({ active: true });
-    if (!activeRound) return res.json([]); 
+    if (!activeRound) return res.json([]);
     const tasks = await Flag.find({ setNumber: activeRound.flagSet })
       .select('title description link points setNumber');
     res.json(tasks);

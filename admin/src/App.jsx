@@ -10,6 +10,7 @@ import PlayerManager from './pages/PlayerManager';
 import RoundManager from './pages/RoundManager';
 import Countdown from './pages/Countdown';
 import Leaderboard from './pages/Leaderboard';
+import OverallLeaderboard from './pages/OverallLeaderboard';
 import PlayerPortal from './pages/PlayerPortal';
 import Challenges from './pages/Challenges';
 
@@ -58,6 +59,10 @@ function App() {
               <Route 
                 path="/leaderboard" 
                 element={<Leaderboard />} 
+              />
+              <Route 
+                path="/overall-leaderboard" 
+                element={<OverallLeaderboard />} 
               />
 
               <Route
