@@ -46,7 +46,7 @@ const FlagManagement = () => {
         title: '', description: '', link: '', code: '', points: '', setNumber: prev.setNumber 
       }));
     } catch (err) {
-      alert('Failed to create flag.');
+      alert('Failed to create flag. Check if code is unique.');
     }
   };
 
