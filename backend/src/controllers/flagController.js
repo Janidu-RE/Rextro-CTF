@@ -22,8 +22,8 @@ export const createFlag = async (req, res) => {
 
     const { title, description, link, code, points, setNumber } = req.body;
 
-    const existingFlag = await Flag.findOne({ code });
-    if (existingFlag) return res.status(400).json({ message: 'Flag code already exists' });
+    const existingFlag = await Flag.findOne({ code, setNumber: parseInt(setNumber) });
+    if (existingFlag) return res.status(400).json({ message: 'Flag code already exists in this set' });
 
     const flag = new Flag({
       title, description, link, code, points,
