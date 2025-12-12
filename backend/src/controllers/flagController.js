@@ -36,7 +36,7 @@ export const createFlag = async (req, res) => {
     res.json(flags);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server error creating flag' });
+    res.status(500).json({ message: 'Server error creating flag: ' + error.message });
   }
 };
 
