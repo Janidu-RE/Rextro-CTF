@@ -40,12 +40,8 @@ export const submitFlag = async (req, res) => {
     const round = await Round.findOne({ active: true });
     if (!round) return res.status(400).json({ message: 'No active round.' });
 
-    const flag = await Flag.findOne({ code: flagCode });
-    if (!flag) return res.status(404).json({ message: 'Invalid Flag Code.' });
-
-    if (flag.setNumber !== round.flagSet) {
-      return res.status(400).json({ message: 'This flag is not active for the current round.' });
-    }
+    const flag = await Flag.findOne({ code: flagCode, setNumber: round.flagSet });
+    if (!flag) return res.status(404).json({ message: 'Invalid Flag Code for this Round.' });
 
     const player = await Player.findById(playerId);
     if (player.solvedFlags.includes(flag._id)) return res.status(400).json({ message: 'Flag already captured!' });
