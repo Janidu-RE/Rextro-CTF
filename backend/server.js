@@ -43,7 +43,7 @@ const startServer = async () => {
   try {
     await connectDB();
     await initializeUsers();
-    
+
     // Resume countdown if active round exists
     const activeRound = await Round.findOne({ active: true });
     if (activeRound && activeRound.remainingTime > 0) {
@@ -51,7 +51,23 @@ const startServer = async () => {
       startGlobalCountdown();
     }
 
-    app.listen(PORT, () => {
+    app.listen(PORT, async () => { // Made callback async to use await
+      console.log('MongoDB connected');
+
+      // Fix: Drop legacy unique index on Flag code if it exists
+      try {
+        const flagsCollection = mongoose.connection.collection('flags');
+        const indexes = await flagsCollection.indexes();
+        const codeIndex = indexes.find(idx => idx.name === 'code_1');
+        if (codeIndex) {
+          console.log('Dropping legacy unique index on flags...');
+          await flagsCollection.dropIndex('code_1');
+          console.log('Legacy index dropped.');
+        }
+      } catch (e) {
+        console.log('Index check skipped or failed:', e.message);
+      }
+
       console.log(`Server running on port ${PORT}`);
     });
   } catch (error) {
