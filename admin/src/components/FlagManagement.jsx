@@ -68,7 +68,7 @@ const FlagManagement = () => {
           <Flag className="text-ctf-red-500 w-6 h-6" />
           <h2 className="text-xl font-bold text-white">Task & Flag Manager</h2>
         </div>
-        <p className="text-gray-400 text-sm">Add challenges to specific sets (1-3).</p>
+        <p className="text-gray-400 text-sm">Add challenges to specific sets (1-6).</p>
       </div>
 
       <div className="p-6 space-y-8 overflow-y-auto flex-1">
@@ -78,7 +78,7 @@ const FlagManagement = () => {
             <div>
               <label className="block text-sm font-medium text-ctf-red-400 mb-1">Select Set</label>
               <div className="flex bg-gray-800 rounded-lg p-1 border border-gray-600">
-                {[1, 2, 3].map(num => (
+                {[1, 2, 3, 4, 5, 6].map(num => (
                   <button
                     key={num}
                     type="button"
@@ -89,7 +89,7 @@ const FlagManagement = () => {
                         : 'text-gray-400 hover:text-white'
                     }`}
                   >
-                    Set {num}
+                    {num}
                   </button>
                 ))}
               </div>
@@ -166,7 +166,7 @@ const FlagManagement = () => {
 
         {/* List */}
         <div className="space-y-4">
-          {[1, 2, 3].map(setNum => {
+          {[1, 2, 3, 4, 5, 6].map(setNum => {
             const setFlags = flags.filter(f => f.setNumber === setNum);
             if (setFlags.length === 0) return null;
             

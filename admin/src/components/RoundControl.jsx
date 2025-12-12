@@ -122,7 +122,7 @@ const RoundControl = () => {
             <div>
               <label className="block text-gray-400 text-sm font-bold mb-2 uppercase tracking-wider">2. Select Flag Set</label>
               <div className="grid grid-cols-3 gap-3">
-                {[1, 2, 3].map(num => (
+                {[1, 2, 3, 4, 5, 6].map(num => (
                   <button
                     key={num}
                     onClick={() => setSelectedSet(num.toString())}
