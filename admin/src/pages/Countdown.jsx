@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
+import Leaderboard from './Leaderboard';
 
 const Countdown = () => {
   const navigate = useNavigate();
@@ -115,55 +116,86 @@ const Countdown = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4">
+  return (
+    <div className="min-h-screen bg-black flex flex-col p-4 overflow-hidden relative">
       {/* Control Buttons */}
-      <div className="absolute top-4 left-4 right-4 flex justify-between z-10">
+      <div className="flex justify-between z-10 mb-4 px-4">
         <button
           onClick={() => navigate('/super-admin')}
-          className="bg-ctf-red-600 hover:bg-ctf-red-700 px-6 py-3 rounded-lg text-white font-semibold text-lg"
+          className="bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-lg text-white font-semibold flex items-center gap-2 transition-colors border border-gray-700"
         >
           ← Control Panel
         </button>
         <button
           onClick={handleStopRound}
-          className="bg-red-600 hover:bg-red-700 px-6 py-3 rounded-lg text-white font-semibold text-lg"
+          className="bg-red-900/80 hover:bg-red-800 px-4 py-2 rounded-lg text-red-100 font-semibold border border-red-800 backdrop-blur-sm"
         >
           Stop Round
         </button>
       </div>
 
-      {/* Countdown Display */}
-      <div className="text-center w-full max-w-4xl">
-        <div className="text-ctf-red-500 text-4xl font-bold mb-8 uppercase tracking-widest">
-          Round in Progress
-        </div>
-        
-        {currentGroup && (
-          <div className="text-white text-2xl mb-8">
-            Team {groups.findIndex(g => g.id === currentGroup.id) + 1} - {currentGroup.players.length} Players
-          </div>
-        )}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center max-w-7xl mx-auto w-full">
+        {/* Left Column: Countdown Timer */}
+        <div className="flex flex-col items-center justify-center space-y-8 animate-in slide-in-from-left duration-700">
+            <div className="text-center">
+                <div className="text-ctf-red-500 text-2xl font-bold mb-2 uppercase tracking-[0.2em] animate-pulse">
+                Round in Progress
+                </div>
+                
+                {currentGroup && (
+                <div className="text-gray-400 text-xl font-medium tracking-wide">
+                    Team {groups.findIndex(g => g.id === currentGroup.id) + 1} • {currentGroup.players.length} Operators
+                </div>
+                )}
+            </div>
 
-        <div className="text-white text-9xl font-mono font-bold mb-8 transition-all duration-1000">
-          {formatTime(timeLeft)}
+            {/* Timer Big Display */}
+            <div className="relative">
+                <div className="absolute -inset-10 bg-ctf-red-600/20 blur-[100px] rounded-full animate-pulse pointer-events-none"></div>
+                <div className="text-white text-[150px] leading-none font-mono font-black tracking-tighter drop-shadow-[0_0_30px_rgba(220,38,38,0.6)] tabular-nums">
+                {formatTime(timeLeft)}
+                </div>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="w-full max-w-md bg-gray-900 rounded-full h-4 overflow-hidden border border-gray-800 shadow-inner">
+                <div 
+                    className="bg-gradient-to-r from-ctf-red-600 to-red-500 h-full rounded-full transition-all duration-1000 ease-linear shadow-[0_0_15px_rgba(220,38,38,0.5)]"
+                    style={{ width: `${progress}%` }}
+                ></div>
+            </div>
+            
+            <div className="text-gray-500 font-mono text-sm mt-4">
+                SESSION ID: <span className="text-white font-bold">{currentRound?.sessionId || "----"}</span>
+            </div>
         </div>
 
-        <div className="w-96 bg-gray-800 rounded-full h-6 mb-8 mx-auto overflow-hidden">
-          <div 
-            className="bg-ctf-red-600 h-6 rounded-full transition-all duration-1000 ease-linear"
-            style={{ width: `${progress}%` }}
-          ></div>
+        {/* Right Column: Live Leaderboard */}
+        <div className="h-full max-h-[80vh] bg-gray-900/30 border border-gray-800 rounded-2xl p-6 backdrop-blur-md overflow-hidden flex flex-col animate-in slide-in-from-right duration-700 delay-100 shadow-2xl">
+            <div className="flex items-center justify-between mb-6 border-b border-gray-800 pb-4">
+                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                    <span className="text-yellow-500">🏆</span> Live Rankings
+                </h2>
+                <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    <span className="text-xs text-green-400 font-mono uppercase tracking-widest">Real-time</span>
+                </div>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                <Leaderboard minimal={true} />
+            </div>
         </div>
       </div>
 
       {timeLeft === 0 && (
-        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-20">
-          <div className="text-center">
-            <div className="text-green-500 text-6xl font-bold mb-4 animate-pulse">
-              ROUND COMPLETED!
+        <div className="fixed inset-0 bg-black/95 backdrop-blur-xl flex items-center justify-center z-50 animate-in fade-in duration-500">
+          <div className="text-center scale-110">
+            <div className="text-green-500 text-7xl font-bold mb-6 animate-bounce drop-shadow-[0_0_30px_rgba(34,197,94,0.6)]">
+              MISSION COMPLETE
             </div>
-            <div className="text-white text-2xl">
-              Redirecting to leaderboard...
+            <div className="text-white/80 text-2xl font-light tracking-widest animate-pulse">
+              CALCULATING FINAL SCORES...
             </div>
           </div>
         </div>
