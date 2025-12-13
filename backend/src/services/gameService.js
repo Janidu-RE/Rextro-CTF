@@ -16,35 +16,33 @@ export const autoEndRound = async () => {
       const group = await Group.findById(activeRound.groupId);
       if (group) {
         // CRITICAL: Update players to mark them as played
-        await Player.updateMany(
-          { _id: { $in: group.players } },
-          {
-            status: 'finished',
-            groupId: null,
+        {
+          status: 'finished',
+            // groupId: null, // KEEP Group ID for historical leaderboard
             alreadyPlayed: true
-          }
+        }
         );
-        // Delete the group
-        await Group.deleteOne({ _id: activeRound.groupId });
+        // Do not delete group so we can reference it
+        // await Group.deleteOne({ _id: activeRound.groupId });
       }
 
-      // Deactivate the round
-      activeRound.active = false;
-      activeRound.endTime = new Date();
-      activeRound.remainingTime = 0;
-      await activeRound.save();
+// Deactivate the round
+activeRound.active = false;
+activeRound.endTime = new Date();
+activeRound.remainingTime = 0;
+await activeRound.save();
     }
 
-    // Cleanup any lingering currentRound flags
-    await Group.updateMany({ currentRound: true }, {
-      currentRound: false,
-      roundCompleted: true
-    });
+// Cleanup any lingering currentRound flags
+await Group.updateMany({ currentRound: true }, {
+  currentRound: false,
+  roundCompleted: true
+});
 
-    stopGlobalCountdown();
+stopGlobalCountdown();
   } catch (error) {
-    console.error('Auto-end round error:', error);
-  }
+  console.error('Auto-end round error:', error);
+}
 };
 
 export const startGlobalCountdown = () => {
