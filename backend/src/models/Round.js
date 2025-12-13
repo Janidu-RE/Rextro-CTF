@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 
 const RoundSchema = new mongoose.Schema({
   groupId: { type: mongoose.Schema.Types.ObjectId, ref: 'Group', required: true },
+  players: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Player' }], // Snapshot of players
   startTime: { type: Date, required: true },
   endTime: { type: Date },
   active: { type: Boolean, default: true },

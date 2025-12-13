@@ -24,8 +24,14 @@ export const startRound = async (req, res) => {
     const sessionId = Math.random().toString(36).substring(2, 8).toUpperCase();
     const sessionExpiresAt = new Date(Date.now() + 25 * 60 * 1000); // 25 Minutes expiry
 
+
+    // Fetch group to get players
+    const group = await Group.findById(groupId);
+    if (!group) return res.status(404).json({ message: 'Group not found' });
+
     const round = new Round({
       groupId,
+      players: group.players, // Snapshot players
       startTime: new Date(),
       active: true,
       remainingTime: 1200,

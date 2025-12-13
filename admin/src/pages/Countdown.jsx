@@ -26,9 +26,17 @@ const Countdown = () => {
   }, []); // Empty dependency array = runs once on mount
 
   // 2. Update timeLeft whenever currentRound changes (from the refresh above)
+  // 2. Update timeLeft only if server time drifts significantly (> 2s)
   useEffect(() => {
-    if (currentRound?.remainingTime) {
-      setTimeLeft(currentRound.remainingTime);
+    if (currentRound?.remainingTime !== undefined) {
+      setTimeLeft(prev => {
+        // If drift is less than 2 seconds, keep local smooth timer
+        // This prevents "jitter" or "time increasing" if backend lags slightly
+        if (Math.abs(prev - currentRound.remainingTime) > 2) {
+          return currentRound.remainingTime;
+        }
+        return prev;
+      });
     }
   }, [currentRound]);
 

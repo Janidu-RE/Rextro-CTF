@@ -70,7 +70,12 @@ export const getLeaderboard = async (req, res) => {
 
     if (!targetRound) return res.json([]);
 
-    const leaderboard = await Player.find({ groupId: targetRound.groupId })
+    // Use stored players list if available (post-fix), otherwise fallback to groupId (active rounds/legacy)
+    const playerQuery = (targetRound.players && targetRound.players.length > 0)
+      ? { _id: { $in: targetRound.players } }
+      : { groupId: targetRound.groupId };
+
+    const leaderboard = await Player.find(playerQuery)
       .select('name score solvedFlags')
       .sort({ score: -1, lastSubmissionTime: 1 });
 
