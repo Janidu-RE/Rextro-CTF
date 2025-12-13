@@ -111,9 +111,17 @@ export const addPlayerToGroup = async (req, res) => {
     await Group.findByIdAndUpdate(groupId, { $addToSet: { players: playerId } });
     await Player.findByIdAndUpdate(playerId, { groupId });
 
+    // --- FIX: Sync with active Round if exists ---
+    // If a round is active for this group, add the player to the round's snapshot too
+    // Note: Assuming Round model is imported or we use mongoose.model('Round') if cyclic dep
+    const Round = (await import('../models/Round.js')).default;
+    await Round.updateOne({ active: true, groupId }, { $addToSet: { players: playerId } });
+    // ---------------------------------------------
+
     const groups = await Group.find().populate('players');
     res.json(groups);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -123,11 +131,18 @@ export const removePlayerFromGroup = async (req, res) => {
     const { groupId, playerId } = req.params;
     await Group.findByIdAndUpdate(groupId, { $pull: { players: playerId } });
     await Player.findByIdAndUpdate(playerId, { $unset: { groupId: 1 } });
+
+    // --- FIX: Sync with active Round if exists ---
+    const Round = (await import('../models/Round.js')).default;
+    await Round.updateOne({ active: true, groupId }, { $pull: { players: playerId } });
+    // ---------------------------------------------
+
     await Group.deleteMany({ players: { $size: 0 } });
 
     const groups = await Group.find().populate('players');
     res.json(groups);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: 'Server error' });
   }
 };
