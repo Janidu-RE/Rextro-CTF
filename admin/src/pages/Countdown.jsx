@@ -162,12 +162,8 @@ const Countdown = () => {
             </div>
           </div>
 
-          {/* RIGHT: Live Leaderboard */}
-          <div className="h-full bg-gray-900/30 rounded-2xl border border-gray-800 p-6 overflow-hidden flex flex-col">
-            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-                <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
-                Live Standings
-            </h2>
+          {/* RIGHT: Live Leaderboard (Cleaner) */}
+          <div className="h-full w-full overflow-hidden flex flex-col pt-12">
             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
                 <Leaderboard minimal={true} />
             </div>
