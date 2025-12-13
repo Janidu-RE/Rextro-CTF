@@ -74,14 +74,15 @@ const RoundControl = () => {
           <div className="text-center space-y-4">
             
             {/* Session ID Display */}
-            <div className="p-4 bg-blue-900/20 border border-blue-500/50 rounded-lg animate-in zoom-in duration-300">
-                <div className="flex items-center justify-center gap-2 text-blue-400 mb-2">
-                    <Key size={18} /> <span className="text-sm font-bold uppercase">Session Key</span>
+            {/* Session ID Display */}
+            <div className="p-6 bg-blue-900/20 border border-blue-500/50 rounded-xl animate-in zoom-in duration-300">
+                <div className="flex items-center justify-center gap-2 text-blue-400 mb-3">
+                    <Key size={24} /> <span className="text-xl font-bold uppercase tracking-widest">Session Key</span>
                 </div>
-                <div className="text-4xl font-mono font-black text-white tracking-widest select-all cursor-pointer">
+                <div className="text-7xl md:text-8xl font-mono font-black text-white tracking-widest select-all cursor-pointer shadow-black drop-shadow-2xl">
                     {currentRound.sessionId || "----"}
                 </div>
-                <div className="text-xs text-blue-500 mt-2">Share this code with players to unlock portal</div>
+                <div className="text-sm text-blue-500 mt-2 font-semibold">Share this code with players to unlock portal</div>
             </div>
 
             <div className="p-4 bg-gray-900/50 rounded-lg border border-gray-700">
