@@ -22,7 +22,7 @@ export const startRound = async (req, res) => {
 
     // Generate Random Session ID (6 chars)
     const sessionId = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const sessionExpiresAt = new Date(Date.now() + 25 * 60 * 1000); // 25 Minutes expiry
+    const sessionExpiresAt = new Date(Date.now() + 60 * 60 * 1000); // 25 Minutes expiry
 
 
     // Fetch group to get players
@@ -34,7 +34,7 @@ export const startRound = async (req, res) => {
       players: group.players, // Snapshot players
       startTime: new Date(),
       active: true,
-      remainingTime: 1200,
+      remainingTime: 60,
       flagSet: flagSet || 1,
       sessionId,
       sessionExpiresAt
