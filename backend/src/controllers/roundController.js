@@ -34,7 +34,7 @@ export const startRound = async (req, res) => {
       players: group.players, // Snapshot players
       startTime: new Date(),
       active: true,
-      remainingTime: 60,
+      remainingTime: 25 * 60,
       flagSet: flagSet || 1,
       sessionId,
       sessionExpiresAt
